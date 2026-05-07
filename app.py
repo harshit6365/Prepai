@@ -18,7 +18,8 @@ st.sidebar.caption("by Vision7Lab")
 page = st.sidebar.radio("Navigate", [
     "💬 Chat Coach",
     "🗺 RoadmapBot",
-    "🛠 ProjectBot"
+    "🛠 ProjectBot",
+    "🎤 InterviewBot"
 ])
 
 if page == "💬 Chat Coach":
@@ -210,3 +211,99 @@ elif page == "🛠 ProjectBot":
                 file_name="project_ideas.txt",
                 mime="text/plain"
             )
+
+elif page == "🎤 InterviewBot":
+    st.title("🎤 InterviewBot")
+    st.caption("Practice mock interviews and get instant feedback")
+    st.divider()
+
+    if "interview_messages" not in st.session_state:
+        st.session_state.interview_messages = []
+    if "interview_started" not in st.session_state:
+        st.session_state.interview_started = False
+    if "question_count" not in st.session_state:
+        st.session_state.question_count = 0
+
+    if not st.session_state.interview_started:
+        role = st.selectbox(
+            "Select interview type",
+            ["AI/ML Engineer", "Python Developer",
+             "Web Developer", "Data Analyst"]
+        )
+
+        if st.button("Start Interview 🎤"):
+            st.session_state.interview_started = True
+            st.session_state.interview_role = role
+            st.session_state.question_count = 0
+            st.session_state.interview_messages = []
+
+            first_prompt = f"""
+            You are a technical interviewer at a top Indian tech company.
+            You are interviewing a student for a {role} internship.
+            Rules:
+            - Ask exactly 5 questions one by one
+            - Wait for student to answer before next question
+            - After each answer give brief feedback
+            - After 5 questions give final score out of 10 and detailed feedback
+            - Start by introducing yourself and asking question 1
+            """
+
+            with st.spinner("Starting your interview..."):
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": first_prompt}]
+                )
+                first_question = response.choices[0].message.content
+
+            st.session_state.interview_messages.append({
+                "role": "assistant",
+                "content": first_question
+            })
+            st.rerun()
+
+    else:
+        st.info(f"🎤 Mock Interview — {st.session_state.interview_role} Internship")
+
+        if st.button("❌ End Interview"):
+            st.session_state.interview_started = False
+            st.session_state.interview_messages = []
+            st.session_state.question_count = 0
+            st.rerun()
+
+        for msg in st.session_state.interview_messages:
+            with st.chat_message(msg["role"]):
+                st.write(msg["content"])
+
+        user_answer = st.chat_input("Type your answer...")
+
+        if user_answer:
+            with st.chat_message("user"):
+                st.write(user_answer)
+
+            st.session_state.interview_messages.append({
+                "role": "user",
+                "content": user_answer
+            })
+            st.session_state.question_count += 1
+
+            with st.spinner("Interviewer is responding..."):
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": f"You are a technical interviewer for {st.session_state.interview_role} internship. Ask 5 questions total. Question count so far: {st.session_state.question_count}. After 5 answers give final score out of 10."
+                        },
+                        *st.session_state.interview_messages
+                    ]
+                )
+                interviewer_reply = response.choices[0].message.content
+
+            with st.chat_message("assistant"):
+                st.write(interviewer_reply)
+
+            st.session_state.interview_messages.append({
+                "role": "assistant",
+                "content": interviewer_reply
+            })
+            st.rerun()
