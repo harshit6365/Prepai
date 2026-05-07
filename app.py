@@ -1,6 +1,3 @@
-# PrepAI — AI Internship Coach
-# Vision7Lab — Version 2 with RoadmapBot
-
 import streamlit as st
 from groq import Groq
 from dotenv import load_dotenv
@@ -20,7 +17,8 @@ st.sidebar.title("🚀 PrepAI")
 st.sidebar.caption("by Vision7Lab")
 page = st.sidebar.radio("Navigate", [
     "💬 Chat Coach",
-    "🗺 RoadmapBot"
+    "🗺 RoadmapBot",
+    "🛠 ProjectBot"
 ])
 
 if page == "💬 Chat Coach":
@@ -81,28 +79,23 @@ elif page == "🗺 RoadmapBot":
 
     with st.form("roadmap_form"):
         name = st.text_input("Your Name")
-        
+
         current_skills = st.multiselect(
             "Your current skills",
             ["Python basics", "HTML/CSS", "JavaScript", "React",
              "Machine Learning", "Data Analysis", "SQL",
              "Git/GitHub", "Java", "C++", "None yet"]
         )
-        
+
         target_role = st.selectbox(
             "Target internship role",
             ["AI/ML Engineer", "Python Developer", "Web Developer",
              "Data Analyst", "Full Stack Developer", "Product Manager"]
         )
-        
-        hours_per_day = st.slider(
-            "Hours available per day", 1, 8, 3
-        )
-        
-        weeks_available = st.slider(
-            "Weeks available to prepare", 2, 12, 6
-        )
-        
+
+        hours_per_day = st.slider("Hours available per day", 1, 8, 3)
+        weeks_available = st.slider("Weeks available to prepare", 2, 12, 6)
+
         submitted = st.form_submit_button("Generate My Roadmap 🚀")
 
     if submitted:
@@ -111,41 +104,109 @@ elif page == "🗺 RoadmapBot":
         else:
             prompt = f"""
             Create a detailed week-by-week internship preparation roadmap for:
-            
             Name: {name}
             Current Skills: {', '.join(current_skills)}
             Target Role: {target_role}
             Hours per day: {hours_per_day}
             Weeks available: {weeks_available}
-            
-            Format the roadmap clearly with:
+
+            Format with:
             - Week number and title
-            - What to learn that week
-            - What to build that week
-            - Resources to use (free only)
-            - Goal for the week
-            
-            Make it specific, actionable, and realistic for an Indian engineering student.
-            Focus on getting them internship-ready within {weeks_available} weeks.
+            - What to learn
+            - What to build
+            - Free resources
+            - Weekly goal
+
+            Make it specific and realistic for an Indian engineering student.
             """
 
             with st.spinner("Building your personalised roadmap..."):
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "user", "content": prompt}
-                    ]
+                    messages=[{"role": "user", "content": prompt}]
                 )
                 roadmap = response.choices[0].message.content
 
-            st.success(f"✅ Your personalised roadmap is ready, {name}!")
+            st.success(f"✅ Your roadmap is ready, {name}!")
             st.divider()
             st.markdown(roadmap)
-            
             st.divider()
             st.download_button(
                 label="📥 Download Roadmap",
                 data=roadmap,
-                file_name=f"{name}_internship_roadmap.txt",
+                file_name=f"{name}_roadmap.txt",
+                mime="text/plain"
+            )
+
+elif page == "🛠 ProjectBot":
+    st.title("🛠 ProjectBot")
+    st.caption("Get 3 perfect project ideas for your portfolio")
+    st.divider()
+
+    with st.form("project_form"):
+        skill_level = st.selectbox(
+            "Your skill level",
+            ["Complete Beginner", "Basic Python known",
+             "Intermediate - know APIs", "Advanced"]
+        )
+
+        target_role = st.selectbox(
+            "Target internship role",
+            ["AI/ML Engineer", "Python Developer", "Web Developer",
+             "Data Analyst", "Full Stack Developer"]
+        )
+
+        time_available = st.selectbox(
+            "Time to build project",
+            ["1 week", "2 weeks", "1 month"]
+        )
+
+        interests = st.multiselect(
+            "Your interests",
+            ["Education", "Healthcare", "Finance", "Music",
+             "Sports", "Social Media", "E-commerce", "Gaming",
+             "Environment", "Travel"]
+        )
+
+        submitted2 = st.form_submit_button("Get My Project Ideas 🛠")
+
+    if submitted2:
+        if not interests:
+            st.error("Please select at least one interest!")
+        else:
+            prompt = f"""
+            Suggest 3 perfect projects for an internship portfolio:
+            Skill Level: {skill_level}
+            Target Role: {target_role}
+            Time Available: {time_available}
+            Interests: {', '.join(interests)}
+
+            For each project:
+            1. Project name and description
+            2. Problem it solves
+            3. Tech stack
+            4. Step by step how to build
+            5. GitHub README tips
+            6. How to explain in interview
+            7. Time to complete
+
+            Make it realistic for Indian tech internships.
+            """
+
+            with st.spinner("Finding perfect projects for you..."):
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                projects = response.choices[0].message.content
+
+            st.success("✅ Here are your 3 perfect projects!")
+            st.divider()
+            st.markdown(projects)
+            st.divider()
+            st.download_button(
+                label="📥 Download Project Ideas",
+                data=projects,
+                file_name="project_ideas.txt",
                 mime="text/plain"
             )
